@@ -27,7 +27,7 @@ async fn main() {
     log::info!("linking database...");
     let rb = Rbatis::new();
 
-    rb.link("sqlite:///home/satan/library/db.sqlite3").await.unwrap();
+    rb.link().await.unwrap();
 
     let rb = Arc::new(rb);
 
