@@ -3,23 +3,23 @@ extern crate rbatis;
 #[macro_use]
 extern crate rocket;
 
-use std::string::String;
+mod user;
+mod utils;
+mod iorecord;
+mod discussionroom;
+mod bookload_record;
+
 use std::sync::Arc;
 
-use rbatis::crud::CRUD;
-use rbatis::Json;
 use rbatis::rbatis::Rbatis;
-use rocket::{Request, State};
 use rocket::fairing::AdHoc;
-use rocket::request::{FromRequest, Outcome};
-use rocket::response::{content, status};
-use serde;
-use serde_json;
 
+use crate::iorecord::urls as iorecord_urls;
 use crate::user::models::User;
-use crate::user::urls;
+use crate::user::urls as user_urls;
+use crate::discussionroom::urls as dis_urls;
 
-mod user;
+
 
 #[rocket::main]
 async fn main() {
@@ -28,11 +28,14 @@ async fn main() {
     let rb = Rbatis::new();
 
     rb.link("sqlite:///home/satan/library/db.sqlite3").await.unwrap();
+
     let rb = Arc::new(rb);
 
 
     rocket::build()
-        .mount("/api", routes![urls::login])
+        .mount("/api", user_urls::routes())
+        .mount("/api", iorecord_urls::routes())
+        .mount("/api", dis_urls::routes())
         .attach(AdHoc::on_ignite("Rbatis Database", |rocket| async move {
             rocket.manage(rb)
         }))

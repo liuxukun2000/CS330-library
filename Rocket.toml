@@ -1,0 +1,9 @@
+[default]
+address = "0.0.0.0"
+log_level = "normal"
+limits = { forms = "64 kB", json = "1 MiB" }
+
+[release]
+secret_key = "hPRYyVRiMyxpw5sBB1XeCMN1kFsDCqKvBi2QJxBVHQk="
+log_level = "off"
+#workers = 16
