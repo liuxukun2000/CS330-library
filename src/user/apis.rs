@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use rbatis::crud::CRUD;
 use rbatis::rbatis::Rbatis;
+// use redis::AsyncCommands;
 use rocket::{Request, State};
 use rocket::form::{Form, Strict};
 use rocket::http::{Cookie, CookieJar};
@@ -16,6 +17,10 @@ use crate::utils::guards::IsLogin;
 use super::forms;
 use super::models::{StaticInfo, User};
 use super::responses::StaticResponse;
+
+use deadpool_redis::Pool;
+// use  redis::aio::Connection;
+use redis::AsyncCommands;
 
 #[post("/login", data = "<userinfo>")]
 pub async fn login(rb: &State<Arc<Rbatis>>, cookies: &CookieJar<'_>, userinfo: Form<forms::UserLoginForm>)
@@ -107,6 +112,13 @@ pub async fn user_tag(rb: &State<Arc<Rbatis>>, userinfo: IsLogin)
 }
 
 #[get("/test")]
-pub async fn test() -> &'static str {
-    "hello"
+pub async fn test(pool: &State<Pool>) -> String {
+    let mut con = pool.get().await.unwrap();
+    // con.sadd("key", 1).await.unwrap();
+    let mut x:i32 = con.set_nx("key1", 0).await.unwrap();
+    x = con.incr("key1", 1i32).await.unwrap();
+    // let x:String = con.set("key", "value".to_string()).await.unwrap();
+    x = con.get("key1").await.unwrap();
+   x .to_string()
+    // "hello".to_string()
 }
