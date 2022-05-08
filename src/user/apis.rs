@@ -21,6 +21,7 @@ use super::responses::StaticResponse;
 use deadpool_redis::Pool;
 // use  redis::aio::Connection;
 use redis::AsyncCommands;
+use crate::utils::session::Session;
 
 #[post("/login", data = "<userinfo>")]
 pub async fn login(rb: &State<Arc<Rbatis>>, cookies: &CookieJar<'_>, userinfo: Form<forms::UserLoginForm>)
@@ -111,14 +112,18 @@ pub async fn user_tag(rb: &State<Arc<Rbatis>>, userinfo: IsLogin)
     status::Accepted(Some(content::Json(serde_json::to_string(&ans).unwrap())))
 }
 
-#[get("/test")]
-pub async fn test(pool: &State<Pool>) -> String {
+#[post("/test")]
+pub async fn test(pool: &State<Pool>, mut s: Session, user: IsLogin) -> String {
     let mut con = pool.get().await.unwrap();
     // con.sadd("key", 1).await.unwrap();
     let mut x:i32 = con.set_nx("key1", 0).await.unwrap();
     x = con.incr("key1", 1i32).await.unwrap();
     // let x:String = con.set("key", "value".to_string()).await.unwrap();
     x = con.get("key1").await.unwrap();
-   x .to_string()
+    s.set("userinfo", user.0).await;
+    let x = s.get::<User>("userinfo").await.unwrap();
+    x.user_id.clone()
+    // s.session_id.clone()
+    // x .to_string()
     // "hello".to_string()
 }

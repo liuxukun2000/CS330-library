@@ -35,7 +35,7 @@ async fn main() {
     log::info!("linking database...");
     let rb = Rbatis::new();
 
-    rb.link("sqlite:///home/satan/Desktop/library_rust/db.sqlite3").await.unwrap();
+    rb.link("sqlite:///home/satan/library/db.sqlite3").await.unwrap();
 
     let rb = Arc::new(rb);
     let mut cfg = Config::from_url("redis://127.0.0.1/");
