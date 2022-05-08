@@ -55,12 +55,12 @@ pub async fn loan_info(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Ac
 }
 
 #[post("/loan-list")]
-pub async fn loan_list(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Accepted<content::Json<String>> {
+pub async fn loan_list(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Accepted<Json<String>> {
     let user = userinfo.0;
     let loan_info_wrapper = rb
         .new_wrapper()
         .eq("user_id", user.id)
-        .group_by(&["book_id"])
+        // .group_by(&["book_id"])
         .order_by(true, &["loan_date"]);
     let loan_info: Vec<Bookloadrecord> = rb
         .fetch_list_by_wrapper(loan_info_wrapper)
@@ -68,7 +68,7 @@ pub async fn loan_list(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Ac
         .unwrap();
     let mut ans = HashMap::new();
     if loan_info.len() == 0 {
-        return status::Accepted(Some(content::Json(serde_json::to_string(&ans).unwrap())))
+        return status::Accepted(Some(Json(serde_json::to_string(&ans).unwrap())))
     }
     let books: Vec<Book> = rb
         .fetch_list_by_column(
@@ -98,10 +98,12 @@ pub async fn loan_list(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Ac
                                 .get(&x.1.book_id)
                                 .unwrap()
                                 .clone(),
-                            date: x.1.loan_date.inner
+                            date: x.1.loan_date
+                                .format("%Y年%m月%d日")
+                                .to_string()
                         }
             )
             .collect::<Vec<BookListResponse>>()
     );
-    return status::Accepted(Some(content::Json(serde_json::to_string(&ans).unwrap())))
+    return status::Accepted(Some(Json(serde_json::to_string(&ans).unwrap())))
 }

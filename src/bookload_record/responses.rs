@@ -5,5 +5,5 @@ use chrono::NaiveDate;
 pub struct BookListResponse {
     pub id: i32,
     pub name: String,
-    pub r#date: NaiveDate
+    pub r#date: String
 }
