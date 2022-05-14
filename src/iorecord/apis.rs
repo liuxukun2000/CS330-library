@@ -59,8 +59,8 @@ pub async fn library_info(rb: &State<Arc<Rbatis>>, userinfo: IsLogin)
     let user = userinfo.0;
     let mut fmt = "%Y年%m月%d日";
     let w = rb.new_wrapper()
-        .eq("is_in", 1)
-        .eq("user_id", &user.user_id)
+        .eq("is_in", true)
+        .eq("user_id", "11912823")
         .order_by(true, &["occur_time"])
         ;
     let mut io_records: Vec<IORecord> = rb

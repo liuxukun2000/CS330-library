@@ -24,3 +24,7 @@ chrono = "*"
 deadpool-redis = { version = "*", features = ["serde"] }
 redis = "*"
 itertools = "*"
+uuid = { version = "0.4", features = ["serde", "v4"] }
+rocket_cors = "0.6.0-alpha1"
+dlopen = "*"
+dlopen_derive = "*"

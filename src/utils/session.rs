@@ -1,6 +1,7 @@
 use deadpool_redis::{redis::{AsyncCommands}, Pool, Connection};
 use rbatis::Error;
 use std::string::String;
+// use rbson::spec::BinarySubtype::Uuid;
 use redis::{FromRedisValue, ToRedisArgs};
 // use redis::Value::Status;
 use rocket::Request;
@@ -11,6 +12,7 @@ use rocket::outcome::IntoOutcome;
 use rocket::State;
 use serde::{Deserialize, Serialize};
 use rocket::serde::DeserializeOwned;
+use uuid::Uuid;
 
 pub struct Session {
     pub connect: Connection,
@@ -23,9 +25,8 @@ impl<'r> FromRequest<'r> for Session {
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let mut token = request.cookies().get_private("session");
-
         if token.is_none() {
-            token = Some(Cookie::new("session", "123321"));
+            token = Some(Cookie::new("session", Uuid::new_v4().to_string()));
             request.cookies().add_private(token.clone().unwrap());
             // return Outcome::Failure((Status::Unauthorized, ()));
         }
@@ -58,5 +59,17 @@ impl Session {
         let value_ = serde_json::to_string(&value).unwrap();
         self.connect.hset::<_, _, _, i32>(&self.session_id, key, &value_).await.unwrap();
         value
+    }
+
+    pub async fn exists(&mut self, key: &str) -> bool{
+        self.connect.hexists(&self.session_id, key).await.unwrap()
+    }
+
+    pub async fn delete(&mut self, key: &str) {
+        self.connect.hdel::<_, _, i32>(&self.session_id, key).await.unwrap();
+    }
+
+    pub async fn set_timeout(&mut self, sec: usize) {
+        self.connect.expire::<_, i32>(&self.session_id, sec).await.unwrap();
     }
 }

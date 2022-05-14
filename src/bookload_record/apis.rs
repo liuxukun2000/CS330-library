@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+// use std::str::pattern::Pattern;
 use std::string::String;
 use std::sync::Arc;
 
@@ -18,10 +19,12 @@ use serde::de::value::StrDeserializer;
 use crate::utils::guards::IsLogin;
 use crate::book::models::Book;
 
-use super::models::Bookloadrecord;
+use super::models::{Bookloadrecord, get_types, get_words};
 use super::responses::BookListResponse;
 use itertools::Itertools;
 
+static default_words: [&str; 15] = ["大学", "书院", "南方科技", "深圳", "敢为天下先", "青春", "一丹",
+    "琳恩", "函泳", "学业", "热爱", "生活", "自强", "求是", "求真"];
 
 #[post("/loan-info")]
 pub async fn loan_info(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Accepted<content::Json<String>> {
@@ -47,7 +50,7 @@ pub async fn loan_info(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Ac
         .new_wrapper()
         .eq("book_id", book.id)
         .ne("user_id", user.id)
-        .group_by(&["user_id"])
+        .group_by(&["user_id, id"])
         ;
     let count = rb.fetch_list_by_wrapper::<Bookloadrecord>(count_wrapper).await.unwrap();
     ans.insert("count", count.len().to_string());
@@ -105,5 +108,57 @@ pub async fn loan_list(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Ac
             )
             .collect::<Vec<BookListResponse>>()
     );
+    return status::Accepted(Some(Json(serde_json::to_string(&ans).unwrap())))
+}
+
+#[post("/loan-type")]
+pub async fn loan_type(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Accepted<Json<String>> {
+    // let user = userinfo.0;
+
+    let types: Vec<Book> = get_types(rb, &(userinfo.0.id), &3usize).await.unwrap();
+    let mut ans: HashMap<&str, i32> = HashMap::new();
+    for i in &types {
+         let count = ans.entry(&i.r#type).or_insert(0);
+        *count += 1;
+    }
+    return status::Accepted(Some(Json(serde_json::to_string(&ans).unwrap())))
+}
+
+
+#[post("/words")]
+pub async fn words(rb: &State<Arc<Rbatis>>, userinfo: IsLogin) -> status::Accepted<Json<String>> {
+    let mut types: Vec<Book> = get_words(rb, &(userinfo.0.id), &15usize)
+        .await
+        .unwrap();
+    types.iter()
+        .update(|x| {
+            log::info!("{}", x.keyword.clone());
+            x.keyword.strip_prefix("['");
+            x.keyword.strip_suffix("']");
+            x.writer_keyword.strip_prefix("['");
+            x.writer_keyword.strip_suffix("']");
+        });
+    let mut ans: HashMap<&str, Vec<String>> = HashMap::new();
+
+    let mut words = vec![];
+    for i in &types {
+        if words.len() > 20 {
+            break;
+        }
+        if i.keyword.len() >= 1 {
+            words.push(i.keyword.clone());
+        }
+        if i.writer_keyword.len() >= 1 {
+            words.push(i.writer_keyword.clone());
+        }
+    }
+    let mut types: HashSet<String> = HashSet::from_iter(words.into_iter());
+    let mut words:Vec<String> = types.iter().map(|x| x.clone()).collect();
+    let mut num = 0;
+    while words.len() < 15 {
+        words.push(default_words[num].to_string());
+        num += 1;
+    }
+    ans.insert("list", words);
     return status::Accepted(Some(Json(serde_json::to_string(&ans).unwrap())))
 }

@@ -7,6 +7,7 @@ use rocket::State;
 
 use crate::user::models::User;
 
+
 #[derive(Debug)]
 pub enum AuthError {
     Missing,
@@ -22,6 +23,7 @@ impl<'r> FromRequest<'r> for IsLogin {
     type Error = AuthError;
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+
         match request.cookies().get_private("token") {
             Some(userinfo) => {
                 let userinfo = userinfo.value();
